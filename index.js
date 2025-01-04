@@ -4,13 +4,13 @@ const admin = require('firebase-admin');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const credentials = require('./key.json');
-const functions = require("firebase-functions")
+// const functions = require("firebase-functions")
 
 const app = express();
 
 // app.use(cors());
 app.use(cors({
-  origin: "http://localhost:3000/list",
+  origin: "http://localhost:3000/",
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 }));
