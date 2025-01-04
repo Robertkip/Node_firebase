@@ -11,7 +11,7 @@ const app = express();
 // app.use(cors());
 app.use(
   cors({
-    origin: "https://node-firebase-7qjp.onrender.com", // Allows requests from any origin
+    origin: "*", // Allows requests from any origin
     methods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed HTTP methods
   })
 );
