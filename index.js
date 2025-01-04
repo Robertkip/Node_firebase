@@ -8,7 +8,13 @@ const functions = require("firebase-functions")
 
 const app = express();
 
-app.use(cors());
+// app.use(cors());
+app.use(
+  cors({
+    origin: "*", // Allows requests from any origin
+    methods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed HTTP methods
+  })
+);
 admin.initializeApp({
   credential: admin.credential.cert(credentials),
 });
@@ -91,63 +97,85 @@ app.post("/login", async (req, res) => {
     }
 };
 
-const USERS_COLLECTION = "users";
+const dnr_collection = "DNR";
 
-app.post("/users", authenticateUser, async (req, res) => {
+app.post("/DNR", authenticateUser, async (req, res) => {
   try {
-    const { firstname, lastname, email } = req.body;
+    const { Address, City, NFC, Name, PhoneNo, State, Zipcode } = req.body;
 
-    if (!firstname || !lastname || !email) {
-      return res.status(400).send("firstname, lastname, and email are required.");
+    // Validate the input
+    if (!Address || !City || !NFC || !Name || !PhoneNo || !State || !Zipcode) {
+      return res.status(400).json({ status: 'error', message: "All fields are required." });
     }
 
-    const newUser = await db.collection(USERS_COLLECTION).add({ firstname, lastname, email });
-    res.status(201).send({ id: newUser.id, firstname, lastname, email });
+    // Create a new user document in Firestore
+    const newUser = await db.collection(dnr_collection).add({ 
+      Address, 
+      City, 
+      NFC, 
+      Name, 
+      PhoneNo, 
+      State, 
+      Zipcode 
+    });
+
+    // Respond with the newly created user data
+    res.status(201).json({ status: 'success', id: newUser.id, Address, City, NFC, Name, PhoneNo, State, Zipcode });
   } catch (error) {
-    res.status(500).send(error.message);
+    console.error("Error creating user:", error); // Log the error for debug purposes
+    res.status(500).json({ status: 'error', message: 'Internal server error.' });
   }
 });
 
 // Get all users (Only allowed for authenticated users)
-app.get("/users", authenticateUser, async (req, res) => {
+app.get("/DNR", authenticateUser, async (req, res) => {
   try {
-    const snapshot = await db.collection(USERS_COLLECTION).get();
-    const users = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    res.status(200).send(users);
+    const snapshot = await db.collection(dnr_collection).get();
+    const DNR = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    
+    // Respond with the list of users
+    res.status(200).json({ status: 'success', users: DNR });
   } catch (error) {
-    res.status(500).send(error.message);
+    console.error("Error fetching users:", error); // Log the error for debug purposes
+    res.status(500).json({ status: 'error', message: 'Internal server error.' });
   }
 });
 
 // Get a user by ID (Only allowed for authenticated users)
-app.get("/users/:id", authenticateUser, async (req, res) => {
+// Get a user by ID (Only allowed for authenticated users)
+app.get("/DNR/:id", authenticateUser, async (req, res) => {
   try {
-    const userId = req.params.id;
-    const userDoc = await db.collection(USERS_COLLECTION).doc(userId).get();
+    const ndrId = req.params.id; // Extract 'id' from the route parameter
+    const userDoc = await db.collection(dnr_collection).doc(ndrId).get();
 
     if (!userDoc.exists) {
       return res.status(404).send("User not found.");
     }
 
-    res.status(200).send({ id: userDoc.id, ...userDoc.data() });
+    res.status(200).send({ id: userDoc.id, ...userDoc.data() }); // Use 'id' in the response
   } catch (error) {
-    res.status(500).send(error.message);
+    res.status(500).send({
+      error: true,
+      message: "An error occurred while retrieving the user by ID.",
+      details: error.message,
+    });
   }
 });
 
 // Update a user by ID (Only allowed for authenticated users)
-app.put("/users/:id", authenticateUser, async (req, res) => {
+// Update a user by ID (Only allowed for authenticated users)
+app.put("/DNR/:id", authenticateUser, async (req, res) => {
   try {
-    const { id: userId } = req.params;
-    const { firstname, lastname, email } = req.body;
+    const { id: ndrId } = req.params; // Extract 'id' from the route parameter
+    const { Address, City, NFC, Name, PhoneNo, State, Zipcode } = req.body;
 
     // Validate the request body
-    if (!firstname && !lastname && !email) {
-      return res.status(400).send("At least one field (firstname, lastname, or email) must be provided.");
+    if (!Address && !City && !NFC && !Name && !PhoneNo && !State && !Zipcode) {
+      return res.status(400).send("At least one field (Address, City, NFC, Name, PhoneNo, State, or Zipcode) must be provided.");
     }
 
     // Get the user document from Firestore
-    const userRef = db.collection(USERS_COLLECTION).doc(userId);
+    const userRef = db.collection(dnr_collection).doc(ndrId);
     const userDoc = await userRef.get();
 
     // Check if the user exists
@@ -155,45 +183,53 @@ app.put("/users/:id", authenticateUser, async (req, res) => {
       return res.status(404).send("User not found.");
     }
 
-    // Update the user document with the provided fields
+    // Prepare the updated data object with the provided fields
     const updatedData = {};
-    if (firstname) updatedData.firstname = firstname;
-    if (lastname) updatedData.lastname = lastname;
-    if (email) updatedData.email = email;
+    if (Address) updatedData.Address = Address;
+    if (City) updatedData.City = City;
+    if (NFC) updatedData.NFC = NFC;
+    if (Name) updatedData.Name = Name;
+    if (PhoneNo) updatedData.PhoneNo = PhoneNo;
+    if (State) updatedData.State = State;
+    if (Zipcode) updatedData.Zipcode = Zipcode;
 
+    // Update the user document in Firestore
     await userRef.update(updatedData);
 
     // Send a success response
     res.status(200).send({
-      message: "User updated successfully.",
-      data: { id: userId, ...updatedData },
+      message: "Record updated successfully.",
+      data: { id: ndrId, ...updatedData },
     });
   } catch (error) {
+    // Send an error response
     res.status(500).send({
       error: true,
-      message: "An error occurred while updating the user.",
+      message: "An error occurred while updating the record.",
       details: error.message,
     });
   }
 });
 
+
 // Delete a user by ID (Only allowed for authenticated users)
-app.delete("/users/:id", authenticateUser, async (req, res) => {
+app.delete("/DNR/:id", authenticateUser, async (req, res) => {
   try {
-    const userId = req.params.id;
-    const userRef = db.collection(USERS_COLLECTION).doc(userId);
+    const ndrId = req.params.id;
+    const userRef = db.collection(dnr_collection).doc(ndrId);
 
     const userDoc = await userRef.get();
     if (!userDoc.exists) {
-      return res.status(404).send("User not found.");
+      return res.status(404).send("Record not found.");
     }
 
     await userRef.delete();
-    res.status(200).send("User deleted successfully.");
+    res.status(200).send("Record deleted successfully.");
   } catch (error) {
     res.status(500).send(error.message);
   }
 });
+
 
 // Run the Express app on port 4500
 const PORT = 8000;
@@ -201,4 +237,4 @@ app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-exports.app = functions.https.onRequest(app);
+exports.api = functions.https.onRequest(app); 
