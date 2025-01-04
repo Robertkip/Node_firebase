@@ -9,12 +9,11 @@ const functions = require("firebase-functions")
 const app = express();
 
 // app.use(cors());
-app.use(
-  cors({
-    origin: "*", // Allows requests from any origin
-    methods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed HTTP methods
-  })
-);
+app.use(cors({
+  origin: "http://localhost:3000/",
+  credentials: true,
+}));
+
 admin.initializeApp({
   credential: admin.credential.cert(credentials),
 });
