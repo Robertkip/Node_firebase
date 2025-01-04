@@ -142,7 +142,6 @@ app.get("/DNR", authenticateUser, async (req, res) => {
 });
 
 // Get a user by ID (Only allowed for authenticated users)
-// Get a user by ID (Only allowed for authenticated users)
 app.get("/DNR/:id", authenticateUser, async (req, res) => {
   try {
     const ndrId = req.params.id; // Extract 'id' from the route parameter
@@ -162,7 +161,6 @@ app.get("/DNR/:id", authenticateUser, async (req, res) => {
   }
 });
 
-// Update a user by ID (Only allowed for authenticated users)
 // Update a user by ID (Only allowed for authenticated users)
 app.put("/DNR/:id", authenticateUser, async (req, res) => {
   try {
@@ -237,4 +235,4 @@ app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-exports.api = functions.https.onRequest(app); 
+// exports.api = functions.https.onRequest(app); 
