@@ -10,7 +10,7 @@ const app = express();
 
 // app.use(cors());
 app.use(cors({
-  origin: "https://clientside-firebase.vercel.app/",
+  origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 }));
